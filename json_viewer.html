@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clustered Images Viewer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        details > summary {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .clusters {
+            margin-left: 20px;
+        }
+
+        .cluster {
+            font-size: 20px;
+            cursor: pointer;            
+            background-color: #555;
+            color: #fff;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            margin-left:20px;
+        }
+
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            align-content: start;
+        }
+
+        .image-container img {
+            flex: 1 0 auto; /* Allow the images to maintain their aspect ratio */
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .image-container img:hover {
+            transform: scale(1.5);
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <!-- Content will be populated here -->
+</div>
+
+<script>
+    fetch('clusters.json')
+    .then(response => response.json())
+    .then(data => {
+        let container = document.getElementById('container');
+        
+        for (const interval in data) {
+            let intervalDetails = document.createElement('details');
+            let intervalSummary = document.createElement('summary');
+            intervalSummary.innerHTML = interval;
+            intervalDetails.appendChild(intervalSummary);
+
+            for (const cluster in data[interval]) {
+                let clusterDetails = document.createElement('details');
+                let clusterSummary = document.createElement('summary');
+                clusterSummary.innerHTML = `Cluster ${cluster}`;
+                clusterDetails.appendChild(clusterSummary);
+
+                let imagesDiv = document.createElement('div');
+                imagesDiv.className = 'image-container';
+                for (const imagePath of data[interval][cluster]) {
+                    const img = document.createElement('img');
+                    img.src = imagePath;
+                    imagesDiv.appendChild(img);
+                }
+                clusterDetails.appendChild(imagesDiv);
+                intervalDetails.appendChild(clusterDetails);
+            }
+            container.appendChild(intervalDetails);
+        }
+    });
+</script>
+</body>
+</html>
