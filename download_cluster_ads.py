@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 import cv2
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-
 from collections import defaultdict
 from dateutil.parser import parse
 import json
@@ -20,7 +19,7 @@ from keras.preprocessing import image as k_image
 from keras.applications.vgg16 import preprocess_input
 
 
-def determine_optimal_k(features, max_k=10):
+def determine_optimal_k(features, max_k=30):
     distortions = []
     K = range(1, max_k + 1)
     for k in K:
@@ -107,7 +106,7 @@ def extract_features(image_folder):
         cv2.normalize(hist, hist)
 
         # Concatenate VGG16 features and color histogram
-        combined_features = np.concatenate([vgg16_features.flatten()])
+        combined_features = np.concatenate([vgg16_features.flatten(),hist.flatten()])
         
         image_features.append(combined_features)
         image_paths.append(image_path)
@@ -129,6 +128,7 @@ def cluster_images_by_date_and_similarity(image_features,image_paths,optimal_k):
     #     quarter = (date_obj.month - 1) // 3 + 1  # 1 for Q1 (Jan-Mar), 2 for Q2 (Apr-Jun), etc.
         
     #     interval_str = f"{year}"
+
     interval_str = "dummy"
     # KMeans clustering by visual similarity within the quarter
     kmeans = KMeans(n_clusters=optimal_k, n_init=10)  # Explicitly set n_init to suppress warnings
