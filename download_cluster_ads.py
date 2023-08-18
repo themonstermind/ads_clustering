@@ -4,6 +4,8 @@ import requests
 from urllib.parse import urlparse
 import cv2
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+
 from collections import defaultdict
 from dateutil.parser import parse
 import json
@@ -120,21 +122,27 @@ def cluster_images_by_date_and_similarity(image_features,image_paths,optimal_k):
     clusters = defaultdict(lambda: defaultdict(list))
 
     # Clustering by yearly intervals
-    df = pd.read_csv('combined_urls.csv')
-    for index, row in df.iterrows():
-        date_obj = parse(row['date'])
-        year = date_obj.year
-        quarter = (date_obj.month - 1) // 3 + 1  # 1 for Q1 (Jan-Mar), 2 for Q2 (Apr-Jun), etc.
+    #df = pd.read_csv('combined_urls.csv')
+    # for index, row in df.iterrows():
+    #     date_obj = parse(row['date'])
+    #     year = date_obj.year
+    #     quarter = (date_obj.month - 1) // 3 + 1  # 1 for Q1 (Jan-Mar), 2 for Q2 (Apr-Jun), etc.
         
-        interval_str = f"{year}"
-        
-        # KMeans clustering by visual similarity within the quarter
-        kmeans = KMeans(n_clusters=optimal_k, n_init=10)  # Explicitly set n_init to suppress warnings
-        labels = kmeans.fit_predict(image_features)
-        for label, path in zip(labels, image_paths):
-            clusters[interval_str][str(label)].append(path)  # Convert label to string for JSON serialization
+    #     interval_str = f"{year}"
+    interval_str = "dummy"
+    # KMeans clustering by visual similarity within the quarter
+    kmeans = KMeans(n_clusters=optimal_k, n_init=10)  # Explicitly set n_init to suppress warnings
+    labels = kmeans.fit_predict(image_features)
+    for label, path in zip(labels, image_paths):
+        clusters[interval_str][str(label)].append(path)  # Convert label to string for JSON serialization
 
     return clusters
+
+def dimensionality_reduction(features):
+    pca = PCA(n_components=10)
+    pca.fit(features)
+    features_reduced = pca.transform(features)
+    return features_reduced
 
 def save_clusters_to_json(clusters, json_path):
     with open(json_path, 'w') as file:
@@ -155,8 +163,10 @@ def execute_all(folder_path):
     optimal_k = determine_optimal_k(features)
     print("optimal value of k is",optimal_k)
 
+    features_reduced = dimensionality_reduction(features)
+
     # Step 3
-    clusters = cluster_images_by_date_and_similarity(features, image_paths, optimal_k)
+    clusters = cluster_images_by_date_and_similarity(features_reduced, image_paths, optimal_k)
 
     # Step 4
     save_clusters_to_json(clusters, 'clusters.json')
