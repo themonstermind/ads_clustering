@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clustered Images Viewer</title>
-    <style>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clustered Images Viewer</title>
+<style>
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f4;
@@ -70,42 +71,61 @@
     </style>
 </head>
 <body>
-
+<select id="domainSelect" onchange="loadClusters()">
+<option value="">--Select Domain--</option>
+</select>
+<div id="container"></div>
+<select id="domainSelect"></select>
 <div id="container">
-    <!-- Content will be populated here -->
+<!-- Content will be populated here -->
 </div>
-
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadDomains();
+});
+
+let selectedDomain = '';
+
+// Function to load domain names
+function loadDomains() {
     fetch('clusters.json')
     .then(response => response.json())
     .then(data => {
-        let container = document.getElementById('container');
-        
-        for (const interval in data) {
-            let intervalDetails = document.createElement('details');
-            let intervalSummary = document.createElement('summary');
-            intervalSummary.innerHTML = interval;
-            intervalDetails.appendChild(intervalSummary);
+        const domainSelect = document.getElementById('domainSelect');
+        data.data.forEach(domainData => {
+            const option = document.createElement('option');
+            option.value = domainData.domain_name;
+            option.textContent = domainData.domain_name;
+            domainSelect.appendChild(option);
+        });
+    });
+}
 
-            for (const cluster in data[interval]) {
-                let clusterDetails = document.createElement('details');
-                let clusterSummary = document.createElement('summary');
-                clusterSummary.innerHTML = `Cluster ${cluster}`;
-                clusterDetails.appendChild(clusterSummary);
+// Function to load and display clusters for the selected domain
+function loadClusters() {
+    selectedDomain = document.getElementById('domainSelect').value;
+    const container = document.getElementById('container');
+    container.innerHTML = '';  // Clear existing clusters
 
-                let imagesDiv = document.createElement('div');
-                imagesDiv.className = 'image-container';
-                for (const imagePath of data[interval][cluster]) {
+    fetch('clusters.json')
+    .then(response => response.json())
+    .then(data => {
+        const domainData = data.data.find(d => d.domain_name === selectedDomain);
+        if (domainData) {
+            domainData.clusters.forEach(cluster => {
+                const clusterDiv = document.createElement('details');
+                clusterDiv.innerHTML = `<summary>Cluster ${cluster.cluster}</summary>`;
+                cluster.images.forEach(imgPath => {
                     const img = document.createElement('img');
-                    img.src = imagePath;
-                    imagesDiv.appendChild(img);
-                }
-                clusterDetails.appendChild(imagesDiv);
-                intervalDetails.appendChild(clusterDetails);
-            }
-            container.appendChild(intervalDetails);
+                    img.src = imgPath;
+                    img.width = 200;
+                    clusterDiv.appendChild(img);
+                });
+                container.appendChild(clusterDiv);
+            });
         }
     });
+}
 </script>
 </body>
 </html>

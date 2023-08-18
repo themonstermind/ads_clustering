@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Cluster Viewer</title>
+    <style>
+        /* Flexbox Masonry Grid */
+        .masonry {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -4px;
+        }
+        .masonry-item {
+            flex: 1;
+            margin: 4px;
+            min-width: calc(33.333% - 8px);
+        }
+        .masonry-item img {
+            max-width: 100%;
+        }
+
+        /* Navigation */
+        nav {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <select id="domainSelect" onchange="loadClusters()">
+        <!-- Domains will be populated here -->
+    </select>
+    <select id="clusterSelect" onchange="loadImages()">
+        <!-- Clusters will be populated here -->
+    </select>
+</nav>
+
+<div class="masonry" id="masonryGrid">
+    <!-- Images will be populated here -->
+</div>
+
+<script>
+    let data = {};
+
+    // Fetch clusters.json and populate domains
+    fetch('clusters.json').then(response => response.json()).then(json => {
+        data = json.data;
+        const domainSelect = document.getElementById('domainSelect');
+        data.forEach(domainData => {
+            const totalCount = Object.values(domainData.clusters).reduce((acc, clusterImages) => acc + clusterImages.length, 0);
+            const option = document.createElement('option');
+            option.value = domainData.domain_name;
+            option.textContent = `${domainData.domain_name} (${totalCount} images)`;
+            domainSelect.appendChild(option);
+        });
+        loadClusters();
+    });
+
+    function loadClusters() {
+        const domainSelect = document.getElementById('domainSelect');
+        const clusterSelect = document.getElementById('clusterSelect');
+        const selectedDomain = domainSelect.value;
+        const domainData = data.find(entry => entry.domain_name === selectedDomain);
+        clusterSelect.innerHTML = '';
+        Object.entries(domainData.clusters).forEach(([clusterId, clusterImages], index) => {
+            const option = document.createElement('option');
+            option.value = clusterId;
+            option.textContent = `Cluster ${index + 1} (${clusterImages.length} images)`;
+            clusterSelect.appendChild(option);
+        });
+        loadImages();
+    }
+    
+    function loadImages() {
+        const domainSelect = document.getElementById('domainSelect');
+        const clusterSelect = document.getElementById('clusterSelect');
+        const masonryGrid = document.getElementById('masonryGrid');
+        const selectedDomain = domainSelect.value;
+        const selectedClusterId = clusterSelect.value;
+        const domainData = data.find(entry => entry.domain_name === selectedDomain);
+        const clusterImages = domainData.clusters[selectedClusterId];
+        masonryGrid.innerHTML = '';
+        clusterImages.forEach(image => {
+            const div = document.createElement('div');
+            div.className = 'masonry-item';
+            const img = document.createElement('img');
+            img.src = image;
+            div.appendChild(img);
+            masonryGrid.appendChild(div);
+        });
+    }
+
+
+</script>
+
+</body>
+</html>
