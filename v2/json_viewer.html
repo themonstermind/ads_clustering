@@ -4,96 +4,157 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Cluster Viewer</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <style>
-        /* Flexbox Masonry Grid */
-        .masonry {
-            display: flex;
-            flex-wrap: wrap;
-            margin: -4px;
-        }
-        .masonry-item {
-            flex: 1;
-            margin: 4px;
-            min-width: calc(33.333% - 8px);
-        }
-        .masonry-item img {
-            max-width: 100%;
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
         }
 
-        /* Navigation */
-        nav {
-            margin-bottom: 20px;
+        .sidebar {
+            max-height: 80vh;
+            overflow-y: scroll;
+            padding: 15px 0;
+            background: #ccc;
         }
+
+        #clusterTabContent {
+            max-height: 80vh;
+            overflow-y: scroll;
+            padding: 15px 0;
+        }
+
+        /* Masonry Flexbox Grid */
+        .masonry {
+            max-width: 1200px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            align-content: start;
+        }
+
+        .masonry img {
+            flex: 1 0 auto; /* Allow the images to maintain their aspect ratio */
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin: 5px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .masonry img:hover {
+            transform: scale(1.5);
+            z-index: 1;
+        }
+
     </style>
 </head>
 <body>
 
-<nav>
-    <select id="domainSelect" onchange="loadClusters()">
-        <!-- Domains will be populated here -->
-    </select>
-    <select id="clusterSelect" onchange="loadImages()">
-        <!-- Clusters will be populated here -->
-    </select>
-</nav>
+<body>
 
-<div class="masonry" id="masonryGrid">
-    <!-- Images will be populated here -->
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <!-- Left Panel (List of Websites) -->
+        <div class="col-4 border-end">
+            <!-- Search Box -->
+            <div class="p-3">
+                <input type="text" class="form-control" id="searchBox" placeholder="Search domains...">
+            </div>
+            <!-- Domain List -->
+            <div class="sidebar">
+                <ul class="list-group" id="domainList">
+                    <!-- Domains will be populated here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Panel (Tabbed View for Clusters) -->
+        <div class="col-8">
+            <!-- Tab Titles (Cluster Names) -->
+            <ul class="nav nav-tabs" id="clusterTabs" role="tablist">
+                <!-- Cluster tabs will be populated here -->
+            </ul>
+
+            <!-- Tab Content (Images) -->
+            <div class="tab-content" id="clusterTabContent">
+                <!-- Images for each cluster will be populated here -->
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Bootstrap JS (Optional) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
 <script>
-    let data = {};
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchBox = document.getElementById('searchBox');
+        const domainList = document.getElementById('domainList');
+        let allDomains = [];
 
-    // Fetch clusters.json and populate domains
-    fetch('clusters.json').then(response => response.json()).then(json => {
-        data = json.data;
-        const domainSelect = document.getElementById('domainSelect');
-        data.forEach(domainData => {
-            const totalCount = Object.values(domainData.clusters).reduce((acc, clusterImages) => acc + clusterImages.length, 0);
-            const option = document.createElement('option');
-            option.value = domainData.domain_name;
-            option.textContent = `${domainData.domain_name} (${totalCount} images)`;
-            domainSelect.appendChild(option);
+        // Fetch clusters.json and populate domains
+        fetch('clusters.json').then(response => response.json()).then(json => {
+            allDomains = json.data;
+            populateDomainList(allDomains);
+
+            searchBox.addEventListener('input', function() {
+                const searchTerm = searchBox.value.toLowerCase();
+                const filteredDomains = allDomains.filter(domainData => domainData.domain_name.toLowerCase().includes(searchTerm));
+                populateDomainList(filteredDomains);
+            });
         });
-        loadClusters();
+
+        function populateDomainList(domains) {
+            domainList.innerHTML = '';
+            domains.forEach((domainData, domainIndex) => {
+                const domainListItem = document.createElement('li');
+                domainListItem.className = 'list-group-item';
+                domainListItem.textContent = `${domainData.domain_name} (${Object.values(domainData.clusters).reduce((acc, cluster) => acc + cluster.length, 0)} images)`;
+                domainListItem.addEventListener('click', function() {
+                    populateClusters(domainData, domainIndex);
+                });
+                domainList.appendChild(domainListItem);
+            });
+        }
+
+        function populateClusters(domainData, domainIndex) {
+            const clusterTabs = document.getElementById('clusterTabs');
+            const clusterTabContent = document.getElementById('clusterTabContent');
+
+            // Clear existing tabs
+            clusterTabs.innerHTML = '';
+            clusterTabContent.innerHTML = '';
+
+            // Populate cluster tabs for the selected domain
+            Object.entries(domainData.clusters).forEach(([clusterId, clusterImages], clusterIndex) => {
+                const tabId = `domain${domainIndex}-cluster${clusterIndex}`;
+
+                // Create tab title
+                const clusterTab = document.createElement('li');
+                clusterTab.className = 'nav-item';
+                clusterTab.innerHTML = `<a class="nav-link ${clusterIndex === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${clusterId} (${clusterImages.length} images)</a>`;
+                clusterTabs.appendChild(clusterTab);
+
+                // Create tab content
+                const clusterTabPane = document.createElement('div');
+                clusterTabPane.className = `tab-pane fade show masonry ${clusterIndex === 0 ? 'active' : ''}`;
+                clusterTabPane.id = tabId;
+                clusterTabPane.role = 'tabpanel';
+                clusterImages.forEach(image => {
+                    
+                    const img = document.createElement('img');
+                    img.src = image;
+                    
+                    clusterTabPane.appendChild(img);
+                });
+                clusterTabContent.appendChild(clusterTabPane);
+            });
+        }
     });
-
-    function loadClusters() {
-        const domainSelect = document.getElementById('domainSelect');
-        const clusterSelect = document.getElementById('clusterSelect');
-        const selectedDomain = domainSelect.value;
-        const domainData = data.find(entry => entry.domain_name === selectedDomain);
-        clusterSelect.innerHTML = '';
-        Object.entries(domainData.clusters).forEach(([clusterId, clusterImages], index) => {
-            const option = document.createElement('option');
-            option.value = clusterId;
-            option.textContent = `Cluster ${index + 1} (${clusterImages.length} images)`;
-            clusterSelect.appendChild(option);
-        });
-        loadImages();
-    }
-    
-    function loadImages() {
-        const domainSelect = document.getElementById('domainSelect');
-        const clusterSelect = document.getElementById('clusterSelect');
-        const masonryGrid = document.getElementById('masonryGrid');
-        const selectedDomain = domainSelect.value;
-        const selectedClusterId = clusterSelect.value;
-        const domainData = data.find(entry => entry.domain_name === selectedDomain);
-        const clusterImages = domainData.clusters[selectedClusterId];
-        masonryGrid.innerHTML = '';
-        clusterImages.forEach(image => {
-            const div = document.createElement('div');
-            div.className = 'masonry-item';
-            const img = document.createElement('img');
-            img.src = image;
-            div.appendChild(img);
-            masonryGrid.appendChild(div);
-        });
-    }
-
-
 </script>
-
 </body>
 </html>
