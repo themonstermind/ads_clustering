@@ -14,6 +14,12 @@
             padding: 20px;
         }
 
+        .count {            
+            padding: 2px;
+            color: #999;
+            text-align: right;
+        }
+
         .sidebar {
             max-height: 80vh;
             overflow-y: scroll;
@@ -75,7 +81,9 @@
                     <!-- Domains will be populated here -->
                 </ul>
             </div>
+            <div class="count"><span id="domainCount"></span></div>    
         </div>
+
 
         <!-- Right Panel (Tabbed View for Clusters) -->
         <div class="col-8">
@@ -88,7 +96,9 @@
             <div class="tab-content" id="clusterTabContent">
                 <!-- Images for each cluster will be populated here -->
             </div>
+            <div class="count"><span id="imgCount"></span></div>    
         </div>
+
     </div>
 </div>
 
@@ -113,11 +123,12 @@
         });
 
         function populateDomainList(domains) {
-            domainList.innerHTML = '';
+            let domainCount = 0;
+            domainList.innerHTML = '';            
             domains.forEach((domainData, domainIndex) => {
                 const domainListItem = document.createElement('li');
                 domainListItem.className = 'list-group-item';
-                domainListItem.textContent = `${domainData.domain_name} (${Object.values(domainData.clusters).reduce((acc, cluster) => acc + cluster.length, 0)} images)`;
+                domainListItem.textContent = `${domainData.domain_name} (${Object.values(domainData.clusters).reduce((acc, cluster) => acc + cluster.length, 0)})`;
                 domainListItem.addEventListener('click', function() {
                     document.querySelectorAll('.list-group-item').forEach(item => {
                         item.classList.remove('selected-domain');
@@ -127,16 +138,21 @@
                     this.classList.add('selected-domain');
                 });
                 domainList.appendChild(domainListItem);
+                domainCount++;
             });
+            document.getElementById('domainCount').textContent = domainCount+" domains";
         }
 
         function populateClusters(domainData, domainIndex) {
             const clusterTabs = document.getElementById('clusterTabs');
             const clusterTabContent = document.getElementById('clusterTabContent');
+            var clusterCount = 0;
+            var imgCount = 0;
 
             // Clear existing tabs
             clusterTabs.innerHTML = '';
             clusterTabContent.innerHTML = '';
+
 
             // Populate cluster tabs for the selected domain
             Object.entries(domainData.clusters).forEach(([clusterId, clusterImages], clusterIndex) => {
@@ -147,6 +163,7 @@
                 clusterTab.className = 'nav-item';
                 clusterTab.innerHTML = `<a class="nav-link ${clusterIndex === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${clusterId} (${clusterImages.length})</a>`;
                 clusterTabs.appendChild(clusterTab);
+                clusterCount++;
 
                 // Create tab content
                 const clusterTabPane = document.createElement('div');
@@ -159,9 +176,13 @@
                     img.src = image;
                     
                     clusterTabPane.appendChild(img);
+                    imgCount++;
                 });
                 clusterTabContent.appendChild(clusterTabPane);
             });
+
+            document.getElementById('imgCount').textContent = clusterCount+" clusters | "+imgCount+" images";
+
         }
     });
 </script>
