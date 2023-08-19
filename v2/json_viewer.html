@@ -57,7 +57,7 @@
         }
 
         .masonry img:hover {
-            transform: scale(1.5);
+            transform: scale(1.1);
             z-index: 1;
         }
 
@@ -96,6 +96,7 @@
             <div class="tab-content" id="clusterTabContent">
                 <!-- Images for each cluster will be populated here -->
             </div>
+            <div id="actions" class="btn-group" role="group"></div>
             <div class="count"><span id="imgCount"></span></div>    
         </div>
 
@@ -128,7 +129,7 @@
             domains.forEach((domainData, domainIndex) => {
                 const domainListItem = document.createElement('li');
                 domainListItem.className = 'list-group-item';
-                domainListItem.textContent = `${domainData.domain_name} (${Object.values(domainData.clusters).reduce((acc, cluster) => acc + cluster.length, 0)})`;
+                domainListItem.textContent = `${domainData.domain_name} (${Object.values(domainData.clusters).reduce((acc, cluster) => acc + cluster.images.length, 0)})`;
                 domainListItem.addEventListener('click', function() {
                     document.querySelectorAll('.list-group-item').forEach(item => {
                         item.classList.remove('selected-domain');
@@ -155,13 +156,13 @@
 
 
             // Populate cluster tabs for the selected domain
-            Object.entries(domainData.clusters).forEach(([clusterId, clusterImages], clusterIndex) => {
+            Object.entries(domainData.clusters).forEach(([clusterId, cluster], clusterIndex) => {
                 const tabId = `domain${domainIndex}-cluster${clusterIndex}`;
 
                 // Create tab title
                 const clusterTab = document.createElement('li');
                 clusterTab.className = 'nav-item';
-                clusterTab.innerHTML = `<a class="nav-link ${clusterIndex === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${clusterId} (${clusterImages.length})</a>`;
+                clusterTab.innerHTML = `<a class="nav-link ${clusterIndex === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${clusterId} (${cluster.images.length})</a>`;
                 clusterTabs.appendChild(clusterTab);
                 clusterCount++;
 
@@ -170,15 +171,80 @@
                 clusterTabPane.className = `tab-pane fade show masonry ${clusterIndex === 0 ? 'active' : ''}`;
                 clusterTabPane.id = tabId;
                 clusterTabPane.role = 'tabpanel';
-                clusterImages.forEach(image => {
-                    
+                cluster.images.forEach(image => {
                     const img = document.createElement('img');
                     img.src = image;
-                    
                     clusterTabPane.appendChild(img);
                     imgCount++;
                 });
+
+
+
+                //add approve button                
+                const approveButton = document.createElement('button');
+                approveButton.className = 'btn btn-outline-success btn-sm mt-2';
+                approveButton.textContent = 'Pass';                
+                approveButton.id = "a_"+domainData.domain_name+"_"+clusterId;
+                if(cluster.approved && cluster.approved == 1){
+                    approveButton.textContent = 'Pass';
+                    approveButton.className = 'btn btn-success btn-sm mt-2';                
+                    approveButton.setAttribute("disabled","");
+                }
+                approveButton.onclick = function() {
+                    const requestData = {
+                        'domain_name': domainData.domain_name,
+                        'cluster_id': clusterId
+                    };
+                    
+                    fetch('/approve', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    }).then(response => response.json()).then(data => {
+                        if(data.status && data.status == "success")
+                        approveButton.className = 'btn btn-success btn-sm mt-2';
+                        approveButton.setAttribute("disabled","");
+                        document.getElementById("r_"+domainData.domain_name+"_"+clusterId).removeAttribute("disabled")
+                    });
+                };
+                clusterTabPane.appendChild(approveButton);
+
+                //add reject button
+                const rejectButton = document.createElement('button');
+                rejectButton.className = 'btn btn-outline-danger btn-sm mt-2';
+                rejectButton.textContent = 'Fail';                
+                rejectButton.id = "r_"+domainData.domain_name+"_"+clusterId;
+                if(cluster.approved == 0){
+                    rejectButton.textContent = 'Fail';
+                    rejectButton.className = 'btn btn-danger btn-sm mt-2';                
+                    rejectButton.setAttribute("disabled","");
+                }
+                rejectButton.onclick = function() {
+                    const requestData = {
+                        'domain_name': domainData.domain_name,
+                        'cluster_id': clusterId
+                    };
+                    
+                    fetch('/reject', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    }).then(response => response.json()).then(data => {
+                        
+                        if(data.status && data.status == "success")
+                        rejectButton.className = 'btn btn-danger btn-sm mt-2';
+                        rejectButton.setAttribute("disabled","");
+                        document.getElementById("a_"+domainData.domain_name+"_"+clusterId).removeAttribute("disabled")                        
+                    });
+                };
+                clusterTabPane.appendChild(rejectButton);
+
                 clusterTabContent.appendChild(clusterTabPane);
+
             });
 
             document.getElementById('imgCount').textContent = clusterCount+" clusters | "+imgCount+" images";

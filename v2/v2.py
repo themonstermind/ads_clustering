@@ -116,39 +116,9 @@ def save_clusters_to_json(clusters, json_path):
     with open(json_path, 'w') as file:
         json.dump(clusters, file)
 
-def start_http(port=8000):
-    """Starts an HTTP server on the specified port if it's not already running."""
-    
-    # Function to check if the port is in use
-    def is_port_in_use(port):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            return s.connect_ex(('localhost', port)) == 0
-
-    # If port is already in use, return
-    if is_port_in_use(port):
-        print(f"Server is already running on port {port}")
-        return
-
-    # Function to start the HTTP server
-    def start_server():
-        Handler = http.server.SimpleHTTPRequestHandler
-        with socketserver.TCPServer(("", port), Handler) as httpd:
-            print(f"Serving at port {port}")
-            httpd.serve_forever()
-
-    # Start the server in a separate thread
-    thread = threading.Thread(target=start_server)
-    thread.start()
-
-    # Give the server a second to initialize and then open the browser
-    webbrowser.open(f'http://localhost:{port}/json_viewer.html', new=2)
-
 
 # Main function to execute the entire process
-def main():
-
-    # Start the server in a separate thread
-    start_http()
+def main():    
 
     # Read CSV file
     df = pd.read_csv("fb_d2c_top50_domain_image_ads.csv")
@@ -182,7 +152,7 @@ def main():
             clusters["data"].append({
                 "domain_name": domain,
                 "clusters": 
-                    {"0": [image_files]}
+                    {"0": {"images":[image_files]}}
                 ,
                 "status": "processed"
             })            
@@ -210,13 +180,13 @@ def main():
         # KMeans clustering
         print("Clustering Process Started ", domain)
         
-        new_clusters = defaultdict(list)
+        new_clusters = defaultdict(lambda: {"images": []})
         
         # KMeans clustering by visual similarity within the quarter
         kmeans = KMeans(n_clusters=k, n_init=10)  # Explicitly set n_init to suppress warnings
-        labels = kmeans.fit_predict(features_reduced)
+        labels = kmeans.fit_predict(features_reduced)        
         for label, path in zip(labels, image_files):
-            new_clusters[str(label)].append(path)  # Convert label to string for JSON serialization        
+            new_clusters[str(label)]["images"].append(path)  # Convert label to string for JSON serialization        
         
 
         clusters["data"].append({
