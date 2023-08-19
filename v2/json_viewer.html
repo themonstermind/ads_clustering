@@ -17,8 +17,12 @@
         .sidebar {
             max-height: 80vh;
             overflow-y: scroll;
-            padding: 15px 0;
-            background: #ccc;
+            padding: 15px 0;            
+        }
+
+        .selected-domain {
+            background-color: #333;
+            color: #fff;
         }
 
         #clusterTabContent {
@@ -62,9 +66,9 @@
         <!-- Left Panel (List of Websites) -->
         <div class="col-4 border-end">
             <!-- Search Box -->
-            <div class="p-3">
+            
                 <input type="text" class="form-control" id="searchBox" placeholder="Search domains...">
-            </div>
+            
             <!-- Domain List -->
             <div class="sidebar">
                 <ul class="list-group" id="domainList">
@@ -115,7 +119,12 @@
                 domainListItem.className = 'list-group-item';
                 domainListItem.textContent = `${domainData.domain_name} (${Object.values(domainData.clusters).reduce((acc, cluster) => acc + cluster.length, 0)} images)`;
                 domainListItem.addEventListener('click', function() {
+                    document.querySelectorAll('.list-group-item').forEach(item => {
+                        item.classList.remove('selected-domain');
+                    });
+
                     populateClusters(domainData, domainIndex);
+                    this.classList.add('selected-domain');
                 });
                 domainList.appendChild(domainListItem);
             });
@@ -136,7 +145,7 @@
                 // Create tab title
                 const clusterTab = document.createElement('li');
                 clusterTab.className = 'nav-item';
-                clusterTab.innerHTML = `<a class="nav-link ${clusterIndex === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${clusterId} (${clusterImages.length} images)</a>`;
+                clusterTab.innerHTML = `<a class="nav-link ${clusterIndex === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${clusterId} (${clusterImages.length})</a>`;
                 clusterTabs.appendChild(clusterTab);
 
                 // Create tab content
