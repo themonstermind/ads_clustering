@@ -203,10 +203,13 @@
                         },
                         body: JSON.stringify(requestData)
                     }).then(response => response.json()).then(data => {
-                        if(data.status && data.status == "success")
-                        approveButton.className = 'btn btn-success btn-sm mt-2';
-                        approveButton.setAttribute("disabled","");
-                        document.getElementById("r_"+domainData.domain_name+"_"+clusterId).removeAttribute("disabled")
+                        if(data.status && data.status == "success"){
+                            cluster.approved = 1;
+                            approveButton.className = 'btn btn-success btn-sm mt-2';
+                            approveButton.setAttribute("disabled","");
+                            document.getElementById("r_"+domainData.domain_name+"_"+clusterId).removeAttribute("disabled")
+                        }
+                        
                     });
                 };
                 clusterTabPane.appendChild(approveButton);
@@ -235,10 +238,12 @@
                         body: JSON.stringify(requestData)
                     }).then(response => response.json()).then(data => {
                         
-                        if(data.status && data.status == "success")
-                        rejectButton.className = 'btn btn-danger btn-sm mt-2';
-                        rejectButton.setAttribute("disabled","");
-                        document.getElementById("a_"+domainData.domain_name+"_"+clusterId).removeAttribute("disabled")                        
+                        if(data.status && data.status == "success") {
+                            cluster.approved = 0;
+                            rejectButton.className = 'btn btn-danger btn-sm mt-2';
+                            rejectButton.setAttribute("disabled","");
+                            document.getElementById("a_"+domainData.domain_name+"_"+clusterId).removeAttribute("disabled")                        
+                        }
                     });
                 };
                 clusterTabPane.appendChild(rejectButton);
